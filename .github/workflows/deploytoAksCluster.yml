@@ -1,0 +1,51 @@
+on: [push]
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    
+    - uses: azure/docker-login@v1
+      with:
+        login-server: teklegionacr.azurecr.io
+        username: ${{ secrets.acr_teklegionacr_username }}
+        password: ${{ secrets.acr_teklegionacr_password }}
+    
+    - name: Build and push image to ACR
+      id: build-image
+      run: |
+        docker build "$GITHUB_WORKSPACE/compose/magento-1/images/nginx" -f  "compose/magento-1/images/nginx/Dockerfile" -t teklegionacr.azurecr.io/teklegioncluster:${{ github.sha }}
+        docker push teklegionacr.azurecr.io/teklegioncluster:${{ github.sha }}
+    
+    - uses: azure/k8s-set-context@v1
+      with:
+         kubeconfig: ${{ secrets.aks_teklegioncluster_kubeConfig }}
+      id: login
+    
+    - name: Create namespace
+      run: |
+        namespacePresent=`kubectl get namespace | grep teklegion-cluster82f9 | wc -l`
+        if [ $namespacePresent -eq 0 ]
+        then
+            echo `kubectl create namespace teklegion-cluster82f9`
+        fi
+
+    - uses: azure/k8s-create-secret@v1
+      with:
+        namespace: teklegion-cluster82f9
+        container-registry-url: teklegionacr.azurecr.io
+        container-registry-username: ${{ secrets.acr_teklegionacr_username }}
+        container-registry-password: ${{ secrets.acr_teklegionacr_password }}
+        secret-name: teklegioncludockerauth
+       
+    - uses: azure/k8s-deploy@v1.2
+      with:
+        namespace: teklegion-cluster82f9
+        manifests: |
+          manifests/deployment.yml
+          manifests/service.yml
+          manifests/ingress.yml
+        images: |
+          teklegionacr.azurecr.io/teklegioncluster:${{ github.sha }}
+        imagepullsecrets: |
+          teklegioncludockerauth
