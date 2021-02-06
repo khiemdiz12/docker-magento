@@ -1,0 +1,17 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+    name: "teklegioncluster-b5bc"
+    labels:
+        app: "teklegioncluster-b5bc"
+    annotations:
+        kubernetes.io/ingress.class: addon-http-application-routing
+spec:
+    rules:
+        - host: teklegion-cluster82f9-teklegioncluster-b5bc.48d5542baaf34e019784.centralus.aksapp.io
+          http:
+            paths:
+            - path: /
+              backend:
+                serviceName: "teklegioncluster-b5bc"
+                servicePort: 80
