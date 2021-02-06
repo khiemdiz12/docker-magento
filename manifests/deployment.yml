@@ -1,0 +1,19 @@
+apiVersion : apps/v1
+kind: Deployment
+metadata:
+  name: khiemdizdockermagento 
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: khiemdizdockermagento
+  template:
+    metadata:
+      labels:
+        app: khiemdizdockermagento 
+    spec:
+      containers:
+        - name: khiemdizdockermagento 
+          image: teklegionacr.azurecr.io/khiemdizdockermagento
+          ports:
+          - containerPort: 80
